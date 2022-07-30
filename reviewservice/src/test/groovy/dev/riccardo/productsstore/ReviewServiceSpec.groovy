@@ -12,7 +12,7 @@ class ReviewServiceSpec extends Specification {
     @Autowired
     private ReviewRepository reviewRepository
 
-    def "ReviewService is created"() {
+    def "Application has ReviewService"() {
         expect:
         this.reviewService
     }
@@ -29,5 +29,4 @@ class ReviewServiceSpec extends Specification {
         testReview.averageReviewScore == readReview.averageReviewScore
         testReview.numberOfReviews == readReview.numberOfReviews
     }
-
 }
