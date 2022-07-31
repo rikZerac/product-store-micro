@@ -1,0 +1,14 @@
+# Redundant Gradle files
+gradlew.bat
+.gradle
+
+# Docs
+*.md
+
+# Git
+.git
+.gitignore
+
+# IDE/editor
+.idea
+.editorconfig

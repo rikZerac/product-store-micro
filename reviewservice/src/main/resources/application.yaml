@@ -1,3 +1,5 @@
+server:
+    port: 80
 spring:
     datasource:
         #mem -> the DB physical storage is the service process memory itself
