@@ -1,16 +1,9 @@
 rootProject.name = 'productsstore'
 final String SERVICE_SUFFIX = "service"
 
-Process ls = new ProcessBuilder("ls", "-A1").start()
-StringBuffer lsOut = new StringBuffer()
-StringBuffer lsErr = new StringBuffer()
-ls.consumeProcessOutput(lsOut, lsErr)
-if(0 != ls.waitFor()) {
-    throw new RuntimeException("Could not list content of directory '${System.getProperty("user.dir")}'. ls stderr: ${lsErr}")
+new File(System.getProperty("user.dir")).list {File dir, String entryName ->
+    entryName.endsWith(SERVICE_SUFFIX) && new File(entryName, dir).isDirectory()
+}.each {
+    println "[X] Including service ${it}"
+    include it
 }
-lsOut.toString().split(System.lineSeparator())
-    .findAll {it.endsWith SERVICE_SUFFIX }
-    .each {
-        println "[X] Including service ${it}"
-        include it
-    }

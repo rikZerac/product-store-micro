@@ -1,0 +1,26 @@
+services:
+    review:
+        build:
+            context: .
+            args:
+                service: review
+        ports:
+            - "80:80"
+        networks:
+            - productsstore-network
+        restart: unless-stopped
+
+    product:
+        build:
+            context: .
+            args:
+                service: product
+        ports:
+            - "8080:8080"
+        networks:
+            - productsstore-network
+        restart: unless-stopped
+
+networks:
+    productsstore-network:
+        driver: bridge

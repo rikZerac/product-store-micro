@@ -1,2 +1,6 @@
 server:
     port: 8080
+spring:
+    jpa:
+        #Service does not use views so default open-in-view: true just lead to a redundant warning message at service startup
+        open-in-view: false
