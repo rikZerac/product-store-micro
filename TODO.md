@@ -1,5 +1,5 @@
 ### Next
-- CUD review service endpoints with login
+- login
 - Error handling
 - Product aggregate GET endpoint
 

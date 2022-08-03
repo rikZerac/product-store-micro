@@ -4,6 +4,6 @@ final String SERVICE_SUFFIX = "service"
 new File(System.getProperty("user.dir")).list {File dir, String entryName ->
     entryName.endsWith(SERVICE_SUFFIX) && new File(entryName, dir).isDirectory()
 }.each {
-    println "[X] Including service ${it}"
+    println "- Buildable service: ${it}"
     include it
 }
