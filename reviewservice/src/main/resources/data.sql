@@ -1,3 +1,4 @@
-INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES ('AA0001', 6.0, 1000);
-INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES ('AA0002', 7.4, 2500);
-INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES ('AA0003', 2.0, 5);
+INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES (12, 7.0, 1000);
+INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES (13, 4.0, 800);
+INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES (15, 8.2, 2500);
+INSERT INTO review (product_id, average_review_score, number_of_reviews) VALUES (18, 10.0, 5000);

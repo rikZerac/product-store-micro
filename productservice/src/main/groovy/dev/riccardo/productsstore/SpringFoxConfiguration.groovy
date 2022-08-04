@@ -16,8 +16,8 @@ class SpringFoxConfiguration {
         new Docket(DocumentationType.SWAGGER_2)
             .apiInfo(
                 new ApiInfo(
-                    "Review service ReST API",
-                    "ReST API of microservice to manage products reviews",
+                    "Product service ReST API",
+                    "ReST API of microservice to aggregate products and reviews",
                     "1.0",
                     null,
                     new Contact(

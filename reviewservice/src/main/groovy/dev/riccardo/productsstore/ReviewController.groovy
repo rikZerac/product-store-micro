@@ -10,7 +10,6 @@ import org.springframework.data.repository.CrudRepository
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -22,52 +21,30 @@ import org.springframework.web.bind.annotation.RestController
 import javax.persistence.Entity
 import javax.persistence.Id
 
-@Entity
-class Review implements Cloneable{
-    @Id
-    String productId
-    Float averageReviewScore
-    Long numberOfReviews
-
-    Boolean asBoolean() {
-        this.productId !=null
-    }
-
-    @Override
-    String toString() {
-        "[${this.productId}] ${this.averageReviewScore} score over ${this.numberOfReviews} reviews"
-    }
-}
-
-interface ReviewRepository extends CrudRepository<Review, String> {
-
-}
-
 @SpringBootApplication
 @RestController
-class ReviewService {
-    private Logger logger = LoggerFactory.getLogger(ReviewService.class)
-
+class ReviewController {
+    private Logger logger = LoggerFactory.getLogger(ReviewController)
     @Autowired
     private ReviewRepository reviewRepository
 
     static void main(String[] args) {
-        SpringApplication.run(ReviewService, args)
+        SpringApplication.run(ReviewController, args)
     }
 
     @Bean
     SecurityFilterChain configureHttpSecurity(HttpSecurity httpSecurity) {
         httpSecurity
-        .authorizeHttpRequests {
-            it.with {
-                antMatchers(HttpMethod.GET, "/**").permitAll()
-                anyRequest().authenticated()
+            .authorizeHttpRequests {
+                it.with {
+                    antMatchers(HttpMethod.GET, "/**").permitAll()
+                    anyRequest().authenticated()
+                }
             }
-        }
         // 'username' and 'password' credentials fields names, /login path for login page
-        .formLogin(Customizer.withDefaults())
-        .csrf().disable()
-        .build()
+            .formLogin(Customizer.withDefaults())
+            .csrf().disable()
+            .build()
     }
 
     @GetMapping(["/", "/home"])
@@ -76,7 +53,7 @@ class ReviewService {
     }
 
     @GetMapping("/review/{productId}")
-    Review findByProductId(@PathVariable String productId) {
+    Review findByProductId(@PathVariable Long productId) {
         this.reviewRepository.findById(productId).orElse(new Review())
     }
 
@@ -87,8 +64,29 @@ class ReviewService {
     }
 
     @DeleteMapping("/review/{productId}")
-    def deleteByProductId(@PathVariable String productId) {
+    def deleteByProductId(@PathVariable Long productId) {
         logger.info "Deleting review: ${productId}"
         this.reviewRepository.deleteById productId
     }
 }
+
+interface ReviewRepository extends CrudRepository<Review, Long> {}
+
+@Entity
+class Review implements Cloneable {
+    @Id
+    Long productId
+    Float averageReviewScore
+    Long numberOfReviews
+
+    Boolean asBoolean() {
+        this.productId != null
+    }
+
+    @Override
+    String toString() {
+        "[${this.productId}] ${this.averageReviewScore} score over ${this.numberOfReviews} reviews"
+    }
+}
+
+
