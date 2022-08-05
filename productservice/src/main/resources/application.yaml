@@ -3,8 +3,3 @@ server:
     error:
         include-message: always
         include-exception: true
-spring:
-    mvc:
-        pathmatch:
-            # For compatibility with SpringFox Swagger implementation
-            matching-strategy: ant_path_matcher
