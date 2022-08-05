@@ -3,3 +3,5 @@ server:
     error:
         include-message: always
         include-exception: true
+review-service:
+    domain-name: "localhost"

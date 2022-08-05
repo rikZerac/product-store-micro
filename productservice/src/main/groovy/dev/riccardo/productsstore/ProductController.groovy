@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.http.HttpStatus
@@ -37,9 +38,9 @@ class ProductController {
 @Service
 class ProductService {
     static final String PRODUCT_API_URL = "https://tienda.mercadona.es/api/categories/{productId}"
-    static final String REVIEW_API_URL = "http://localhost/review/{productId}"
     private Logger logger = LoggerFactory.getLogger(ProductService)
-
+    @Value('#{"http://" + "${review-service.domain-name}" + "/review/{productId}"}')
+    String reviewApiUrl
     RestTemplate restTemplate = new RestTemplate()
     @Autowired
     ResponseStatusExceptionWrapper responseStatusExceptionWrapper
@@ -48,8 +49,8 @@ class ProductService {
         this.responseStatusExceptionWrapper.forward {
             this.logRequest(PRODUCT_API_URL, productId)
             Product product = this.restTemplate.getForObject(PRODUCT_API_URL, Product, [productId: productId])
-            this.logRequest(REVIEW_API_URL, productId)
-            Review review = this.restTemplate.getForObject(REVIEW_API_URL, Review, [productId: productId])
+            this.logRequest(reviewApiUrl, productId)
+            Review review = this.restTemplate.getForObject(reviewApiUrl, Review, [productId: productId])
             if(review.productId != product.id) {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Fetched review productId ${review.productId} does not match fetched product id ${product.id}")
             }

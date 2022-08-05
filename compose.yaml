@@ -1,5 +1,6 @@
 services:
     review:
+        container_name: review-service
         build:
             context: .
             args:
@@ -11,10 +12,13 @@ services:
         restart: unless-stopped
 
     product:
+        container_name: product-service
         build:
             context: .
             args:
                 service: product
+        environment:
+            spring_profiles_active: compose
         ports:
             - "8080:8080"
         networks:

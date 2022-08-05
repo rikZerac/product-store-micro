@@ -32,7 +32,7 @@ class ProductControllerSpec extends Specification {
 
     void "ProductController aggregates a product and a review"() {
         given: "ProductService has a stubbed restTemplate for a productId"
-        this.productService.restTemplate.getForObject(ProductService.REVIEW_API_URL, Review, [productId: PRODUCT_ID]) >> REVIEW
+        this.productService.restTemplate.getForObject(this.productService.reviewApiUrl, Review, [productId: PRODUCT_ID]) >> REVIEW
         this.productService.restTemplate.getForObject(ProductService.PRODUCT_API_URL, Product, [productId: PRODUCT_ID]) >> PRODUCT
 
         when: "ProductController aggregation endpoint is called with the productId"
@@ -49,7 +49,7 @@ class ProductControllerSpec extends Specification {
 
     void "ProductService responds 404 when asked to find unexisting product"() {
         given: "ProductService has a stubbed restTemplate that does not find a review for a product"
-        this.productService.restTemplate.getForObject(ProductService.REVIEW_API_URL, Review, [productId: PRODUCT_ID]) >> REVIEW
+        this.productService.restTemplate.getForObject(this.productService.reviewApiUrl, Review, [productId: PRODUCT_ID]) >> REVIEW
         this.productService.restTemplate.getForObject(ProductService.PRODUCT_API_URL, Product, [productId: PRODUCT_ID]) >> {
             throw new HttpClientErrorException(HTTP_STATUS)
         }
@@ -64,7 +64,7 @@ class ProductControllerSpec extends Specification {
 
     void "ProductService responds 404 when asked to find a product without review"() {
         given: "ProductService has a stubbed restTemplate that does not find a review for a product"
-        this.productService.restTemplate.getForObject(ProductService.REVIEW_API_URL, Review, [productId: PRODUCT_ID]) >> {
+        this.productService.restTemplate.getForObject(this.productService.reviewApiUrl, Review, [productId: PRODUCT_ID]) >> {
             throw new HttpClientErrorException(HTTP_STATUS)
         }
         this.productService.restTemplate.getForObject(ProductService.PRODUCT_API_URL, Product, [productId: PRODUCT_ID]) >> PRODUCT
@@ -80,7 +80,7 @@ class ProductControllerSpec extends Specification {
     void "ProductService responds 500 when external product service responds 500"() {
         given: "ProductService has a stubbed restTemplate that responds 500 for a product"
         HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR
-        this.productService.restTemplate.getForObject(ProductService.REVIEW_API_URL, Review, [productId: PRODUCT_ID]) >> REVIEW
+        this.productService.restTemplate.getForObject(this.productService.reviewApiUrl, Review, [productId: PRODUCT_ID]) >> REVIEW
         this.productService.restTemplate.getForObject(ProductService.PRODUCT_API_URL, Product, [productId: PRODUCT_ID]) >> {
             throw new HttpServerErrorException(httpStatus)
         }
@@ -96,7 +96,7 @@ class ProductControllerSpec extends Specification {
     void "ProductService responds 500 when review service responds 500"() {
         given: "ProductService has a stubbed restTemplate that responds 500 for a product"
         HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR
-        this.productService.restTemplate.getForObject(ProductService.REVIEW_API_URL, Review, [productId: PRODUCT_ID]) >> {
+        this.productService.restTemplate.getForObject(this.productService.reviewApiUrl, Review, [productId: PRODUCT_ID]) >> {
             throw new HttpServerErrorException(httpStatus)
         }
         this.productService.restTemplate.getForObject(ProductService.PRODUCT_API_URL, Product, [productId: PRODUCT_ID]) >> PRODUCT
