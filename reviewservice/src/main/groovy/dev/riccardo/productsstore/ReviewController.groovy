@@ -6,17 +6,21 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.repository.CrudRepository
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -26,7 +30,9 @@ import javax.persistence.Id
 class ReviewController {
     private Logger logger = LoggerFactory.getLogger(ReviewController)
     @Autowired
-    private ReviewRepository reviewRepository
+    ReviewRepository reviewRepository
+    @Autowired
+    WithResponseStatusException withResponseStatusException
 
     static void main(String[] args) {
         SpringApplication.run(ReviewController, args)
@@ -49,24 +55,30 @@ class ReviewController {
 
     @GetMapping(["/", "/home"])
     String sayWelcome() {
-        "Welcome to this awesome products store!"
+        "Welcome to our products reviews!"
     }
 
     @GetMapping("/review/{productId}")
     Review findByProductId(@PathVariable Long productId) {
-        this.reviewRepository.findById(productId).orElse(new Review())
+        this.reviewRepository.findById(productId).orElseThrow {
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "No review available for product with id ${productId}")
+        }
     }
 
     @PostMapping("/review")
     Review save(@RequestBody Review review) {
         logger.info "Received review: ${review}"
-        this.reviewRepository.save(review)
+        this.withResponseStatusException.internalServerError {
+            this.reviewRepository.save(review)
+        }
     }
 
     @DeleteMapping("/review/{productId}")
-    def deleteByProductId(@PathVariable Long productId) {
+    void deleteByProductId(@PathVariable Long productId) {
         logger.info "Deleting review: ${productId}"
-        this.reviewRepository.deleteById productId
+        this.withResponseStatusException(HttpStatus.NOT_FOUND, null) {
+            this.reviewRepository.deleteById productId
+        }
     }
 }
 
@@ -79,13 +91,25 @@ class Review implements Cloneable {
     Float averageReviewScore
     Long numberOfReviews
 
-    Boolean asBoolean() {
-        this.productId != null
-    }
-
     @Override
     String toString() {
         "[${this.productId}] ${this.averageReviewScore} score over ${this.numberOfReviews} reviews"
+    }
+}
+
+@Component
+class WithResponseStatusException {
+    public <T> T internalServerError(Closure<T> body) {
+        this.call(HttpStatus.INTERNAL_SERVER_ERROR, null, body)
+    }
+
+    public <T> T call(HttpStatus status, String reason, Closure <T> body) {
+        try {
+            body.call()
+        } catch(Exception exception) {
+            exception.printStackTrace()
+            throw new ResponseStatusException(status, reason ?: exception.message ?: (exception.class as String), exception)
+        }
     }
 }
 

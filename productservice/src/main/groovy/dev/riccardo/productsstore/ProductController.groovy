@@ -6,11 +6,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException
+import org.springframework.web.client.HttpServerErrorException
+import org.springframework.web.client.RestTemplate
+import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootApplication
 @RestController
@@ -36,21 +41,25 @@ class ProductService {
     private Logger logger = LoggerFactory.getLogger(ProductService)
 
     RestTemplate restTemplate = new RestTemplate()
+    @Autowired
+    ResponseStatusExceptionWrapper responseStatusExceptionWrapper
 
     AggregateResponse findProductById(@PathVariable Long productId) {
-        this.logRequest(REVIEW_API_URL, productId)
-        Review review = this.restTemplate.getForObject(REVIEW_API_URL, Review, [productId: productId])
-        this.logRequest(PRODUCT_API_URL, productId)
-        Product product = this.restTemplate.getForObject(PRODUCT_API_URL, Product, [productId: productId])
-        if(review.productId != product.id) {
-            throw IllegalStateException("Fetched review productId ${review.productId} does not match fetched product id ${productId}")
+        this.responseStatusExceptionWrapper.forward {
+            this.logRequest(PRODUCT_API_URL, productId)
+            Product product = this.restTemplate.getForObject(PRODUCT_API_URL, Product, [productId: productId])
+            this.logRequest(REVIEW_API_URL, productId)
+            Review review = this.restTemplate.getForObject(REVIEW_API_URL, Review, [productId: productId])
+            if(review.productId != product.id) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Fetched review productId ${review.productId} does not match fetched product id ${product.id}")
+            }
+            new AggregateResponse([
+                id: product.id,
+                name: product.name,
+                averageReviewScore: review.averageReviewScore,
+                numberOfReviews: review.numberOfReviews
+            ])
         }
-        new AggregateResponse([
-            id: product.id,
-            name: product.name,
-            averageReviewScore: review.averageReviewScore,
-            numberOfReviews: review.numberOfReviews
-        ])
     }
 
     private void logRequest(String url, Long productId) {
@@ -94,6 +103,21 @@ class Review {
     @Override
     String toString() {
         "[${this.productId}] ${this.averageReviewScore} score over ${this.numberOfReviews} reviews"
+    }
+}
+
+@Component
+class ResponseStatusExceptionWrapper {
+    public <T> T forward(Closure <T> body) {
+        try {
+            body.call()
+        } catch(HttpClientErrorException | HttpServerErrorException httpServerErrorException) {
+            throw new ResponseStatusException(
+                httpServerErrorException.statusCode,
+                "Response from upstream service: ${httpServerErrorException.message}",
+                httpServerErrorException
+            )
+        }
     }
 }
 

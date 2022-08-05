@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title th:text="${message}"></title>
+    </head>
+<body>
+    <p>
+        <span th:text="${status}"></span>:
+        <span th:text="${message}"></span>
+    </p>
+    <img th:src="@{/images/error.jpeg}"/>
+</body>
+
+<style type="text/css">
+    p {
+        font-size: 60px;
+        font-family: monospace;
+    }
+</style>
