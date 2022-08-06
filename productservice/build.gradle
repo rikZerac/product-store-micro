@@ -1,3 +1,9 @@
 plugins {
     id 'spring-boot-service'
 }
+
+version = '1.0.0-SNAPSHOT'
+
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+}

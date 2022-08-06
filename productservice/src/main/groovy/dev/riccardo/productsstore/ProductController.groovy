@@ -7,9 +7,18 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.web.client.RestTemplateBuilder
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpRequest
 import org.springframework.http.HttpStatus
+import org.springframework.http.client.ClientHttpRequestExecution
+import org.springframework.http.client.ClientHttpRequestInterceptor
+import org.springframework.http.client.ClientHttpResponse
+import org.springframework.http.client.OkHttp3ClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
+import org.springframework.util.MultiValueMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
@@ -37,18 +46,24 @@ class ProductController {
 
 @Service
 class ProductService {
-    static final String PRODUCT_API_URL = "https://tienda.mercadona.es/api/categories/{productId}"
+    static final String PRODUCT_API_URL = "https://www.adidas.co.uk/api/products/{productId}"
     private Logger logger = LoggerFactory.getLogger(ProductService)
     @Value('#{"http://" + "${review-service.domain-name}" + "/review/{productId}"}')
     String reviewApiUrl
-    RestTemplate restTemplate = new RestTemplate()
+    @Autowired
+    RestTemplate restTemplate
     @Autowired
     ResponseStatusExceptionWrapper responseStatusExceptionWrapper
 
     AggregateResponse findProductById(@PathVariable Long productId) {
         this.responseStatusExceptionWrapper.forward {
             this.logRequest(PRODUCT_API_URL, productId)
-            Product product = this.restTemplate.getForObject(PRODUCT_API_URL, Product, [productId: productId])
+            Product product
+            try {
+                product = this.restTemplate.getForObject(PRODUCT_API_URL, Product, [productId: "M20324"])
+            } catch(HttpClientErrorException _) {
+                product = this.restTemplate.getForObject(PRODUCT_API_URL, Product, [productId: "M20324"])
+            }
             this.logRequest(reviewApiUrl, productId)
             Review review = this.restTemplate.getForObject(reviewApiUrl, Review, [productId: productId])
             if(review.productId != product.id) {
@@ -65,6 +80,31 @@ class ProductService {
 
     private void logRequest(String url, Long productId) {
         this.logger.info "Requesting ${url.replaceAll(/\{productId}/, productId as String)}"
+    }
+}
+
+@Configuration
+class HeaderCarrierRequestInterceptor implements ClientHttpRequestInterceptor {
+    private MultiValueMap<String, String> receivedHeaders
+
+    @Override
+    ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) {
+        if (this.receivedHeaders) {
+            request.getHeaders().addAll(this.receivedHeaders)
+        }
+        ClientHttpResponse response = execution.execute(request, body)
+        if (!this.receivedHeaders) {
+            this.receivedHeaders = response.getHeaders()
+        }
+        response
+    }
+
+    @Bean
+    RestTemplate restTemplate(RestTemplateBuilder templateBuilder) {
+        templateBuilder
+            .requestFactory(OkHttp3ClientHttpRequestFactory)
+            .interceptors(new HeaderCarrierRequestInterceptor())
+            .build()
     }
 }
 
