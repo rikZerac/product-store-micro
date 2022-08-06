@@ -15,12 +15,11 @@ import org.springframework.security.web.SecurityFilterChain
 class HttpSecurityConfiguration {
     @Bean
     SecurityFilterChain configureHttpSecurity(HttpSecurity httpSecurity) {
-        String h2ConsoleContextPath = "/h2-console"
         httpSecurity.tap {
             authorizeHttpRequests { AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry matcherRegistry ->
                 matcherRegistry.tap {
                     antMatchers(HttpMethod.GET, "/**").permitAll()
-                    antMatchers(h2ConsoleContextPath, "${h2ConsoleContextPath}/**/*").permitAll()
+                    antMatchers("/h2-console/**/*").permitAll()
                     anyRequest().authenticated()
                 }
             }
