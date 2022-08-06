@@ -1,0 +1,9 @@
+{
+  "service_name": "awesome",
+  "service_dir": "{{cookiecutter.service_name + 'service'}}",
+  "service_class_prefix": "{{cookiecutter.service_name.capitalize()}}",
+  "version": "1.0.0-SNAPSHOT",
+  "description": "An awesome tiny microservice!",
+  "author": "Riccardo Caretti",
+  "author_email": "postarcr@gmail.com"
+}
