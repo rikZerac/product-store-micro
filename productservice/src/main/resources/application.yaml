@@ -3,5 +3,8 @@ server:
     error:
         include-message: always
         include-exception: true
+springdoc:
+    swagger-ui:
+        path: /
 review-service:
     domain-name: "localhost"

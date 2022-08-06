@@ -34,6 +34,7 @@ class ReviewController {
 
     @GetMapping("/review/{productId}")
     Review findByProductId(@PathVariable Long productId) {
+        logger.info "Fetching review: ${productId}"
         this.reviewRepository.findById(productId).orElseThrow {
             new ResponseStatusException(HttpStatus.NOT_FOUND, "No review available for product with id ${productId}")
         }
