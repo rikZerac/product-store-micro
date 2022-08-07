@@ -1,6 +1,7 @@
 rootProject.name = 'productsstore'
 final String SERVICE_SUFFIX = "service"
 
+include "e2eTests"
 new File(System.getProperty("user.dir")).list {File dir, String entryName ->
     entryName.endsWith(SERVICE_SUFFIX) && new File(entryName, dir).isDirectory()
 }.each {

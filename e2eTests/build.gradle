@@ -1,0 +1,26 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'groovy'
+}
+
+group = 'dev.riccardo.productsstore'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.codehaus.groovy:groovy'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.spockframework:spock-spring:2.2-M3-groovy-3.0'
+    implementation project(":productservice")
+}
+
+// Add a task to run the functional tests
+tasks.register('e2eTest', Test) {
+    testClassesDirs = sourceSets.main.output.classesDirs
+    classpath += sourceSets.main.runtimeClasspath
+    useJUnitPlatform()
+}

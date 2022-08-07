@@ -23,10 +23,36 @@ For all commands the working directory is the one where this repository has been
 
 ### Test a service
 #### Gradle
-##### Unit test
+##### Unit tests
 ```sh
 ./gradlew :<SERVICE>service:test
 ```
+
+Unit tests are behaviour tests implemented as Spock `Specification`s
+
+#### e2e tests
+```sh
+# Build Docker image to run e2e tests
+docker image build -t e2etests -f e2eTests/Dockerfile .
+
+# Run Docker container from built image to execute e2e tests
+docker run --rm -t --name e2etester --privileged e2etests
+```
+e2e tests are implemented in the following way:
+- [`e2eTests/Dockerfile`][e2eTestsDockerfile] defines a Docker image with
+  - JDK `11`
+  - Docker and Docker-compose 
+  - This repository
+  - `e2eTests/e2e-tests.sh` as entrypoint
+- [`e2eTests/e2e-tests.sh`][e2eTestsScript]:
+  - deploys product and review microservices with Docker-compose as described 
+in section [Deploy all services](#deploy-all-services)
+  - Runs `./gradlew e2eTest`
+  - tears down the microservices with Docker-compose as as described
+    in section [Deploy all services](#deploy-all-services)
+- `e2eTest` Gradle task is a `Test` task running test classes in [`e2eTests/src/main/groovy`][e2eTestsClasses]
+- One test class is defined in `e2eTests/src/main/groovy`: `MicroServicesSpec`. It is a Spock `Specification` with a 
+feature calling product service aggregation endpoint through Spring web `RestTemplate`
 
 #### Swagger(*OpenAPI*)
 Swagger HTML documentation of `<SERVICE>` is exposed at `/`. You can browse it to manually try out the service ReST endpoints.
@@ -70,7 +96,7 @@ or build and run a service in one shot:
 docker container run --rm -t --name <SERVICE>service -p <PORT>:<PORT> <SERVICE>service
 ```
 
-`<PORT>` to listen to is configured for `<SERVICE>` in its [application properties][application properties].
+`<PORT>` to listen to is configured for `<SERVICE>` in its [application properties][applicationProperties].
 
 ### Deploy all services
 #### Docker-compose
@@ -110,7 +136,7 @@ The data storage is an in-memory H2 SQL database. It is deployed and used by Spr
 Moreover it comes with H2 management web console enabled and available at `/h2-console` to navigate the database schema and run SQL scripts. 
 Integration with H2 is a very handy way Spring Boot data-jpa provides for test and demo purposes. Since it is an in-memory database it is not a persistent storage:
 it is recreated every time the Spring Boot application is started and initial data can be set with a [SQL script][seedSQLScript].
-The database coordinates are defined in Spring Boot [application properties][application properties].
+The database coordinates are defined in Spring Boot [application properties][applicationProperties].
 > **Note**
 > H2 management web console is blocked by Spring security by default. In order to be browsable it requires *cross site request forgery* to be disabled.
 > 
@@ -139,7 +165,7 @@ Here is how it is implemented:
 The [`Dockerfile`][Dockerfile] just needs to expose a build `ARG` to know which is the name of the microservice to build and delegate the build to `:<NAME>service:bootJar` Gradle task.
 A second build stage defined in the `Dockerfile` copies the `jar` into a new image layer to not include source code in the final image built and set the entrypoint to run a container to `java -jar *.jar`.
 This way the Docker image build is agnostic of the version of the microservice(the `jar`) to be included, which is instead defined only by the microservice `build.gradle`
-> **note**
+> **Note**
 > The term 'in-line' Gradle plugin is a term of mine. 
 > 
 > In Gradle terminology it is called *precompiled script plugin* because it is a Gradle Plugin
@@ -177,25 +203,16 @@ Thus by sending a `GET` request to `/product/13` the following response body is 
 }
 ````
 
-
-
-
-
-
-
- 
-
-
-
-
-
-[HttpSecurity]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/HttpSecurityConfiguration.groovy#L23
-[passwordEncrypt]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/HttpSecurityConfiguration.groovy#L40
-[application properties]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/resources/application.yaml
+[e2eTestsDockerfile]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/Dockerfile
+[e2eTestsScript]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/e2e-tests.sh
+[e2eTestsClasses]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests//src/main/groovy/dev/riccardo/productsstore/MicroServicesSpec.groovy
+[HttpSecurity]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L23
+[passwordEncrypt]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy//dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L40
+[applicationProperties]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/resources/application.yaml
 [cookiecutter-repo]: https://github.com/cookiecutter/cookiecutter
 [cookiecutter-data]: https://github.com/rikZerac/product-store-micro/blob/master/servicegen/cookiecutter.json
 [seedSQLScript]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/resources/data.sql
-[securityTweaks]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/HttpSecurityConfiguration.groovy#L28
+[securityTweaks]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy//dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L28
 [settingsGradle]: https://github.com/rikZerac/product-store-micro/blob/master/settings.gradle
 [serviceBuildGradle]:  https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/build.gradle
 [gradlePlugin]:  https://github.com/rikZerac/product-store-micro/blob/master/buildSrc/src/main/groovy/spring-boot-service.gradle
