@@ -1,3 +1,5 @@
+microservice:
+    version: 1.0.0
 server:
     port: 80
     error:

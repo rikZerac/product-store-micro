@@ -9,4 +9,5 @@ repositories {
 dependencies {
     implementation "io.spring.dependency-management:io.spring.dependency-management.gradle.plugin:1.0.12.RELEASE"
     implementation 'org.springframework.boot:spring-boot-gradle-plugin:2.7.2'
+    implementation 'org.yaml:snakeyaml:1.30'
 }

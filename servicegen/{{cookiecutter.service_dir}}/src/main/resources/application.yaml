@@ -1,5 +1,7 @@
+microservice:
+    version: {{cookiecutter.version}}
 server:
-    port: 8080
+    port: {{cookiecutter.port}}
     error:
         include-message: always
         include-exception: true

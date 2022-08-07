@@ -8,7 +8,6 @@ import spock.lang.Specification
 
 @SpringBootTest
 class ReviewControllerSpec extends Specification {
-    private static final long NO_REVIEW_PRODUCT_ID = 1000
     Review REVIEW = new Review(productId: 1, averageReviewScore: 7.4, numberOfReviews: 2000)
 
     @Autowired

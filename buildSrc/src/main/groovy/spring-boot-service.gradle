@@ -23,3 +23,6 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+version = tasks.create("parseVersion", dev.riccardo.productsstore.VersionParserTask).parse()
+println "${name}@${version}"

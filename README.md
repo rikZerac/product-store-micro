@@ -28,7 +28,7 @@ For all commands the working directory is the one where this repository has been
 ./gradlew :<SERVICE>service:test
 ```
 
-Unit tests are behaviour tests implemented as Spock `Specification`s
+Unit tests are behaviour tests implemented as Spock `Specification`s.
 
 #### e2e tests
 ```sh
@@ -36,7 +36,7 @@ Unit tests are behaviour tests implemented as Spock `Specification`s
 docker image build -t e2etests -f e2eTests/Dockerfile .
 
 # Run Docker container from built image to execute e2e tests
-docker run --rm -t --privileged -v $(pwd)/e2eTests/reports:/e2e/reports --name e2etester e2etests
+docker run --rm -t --privileged -v $(pwd)/e2eTests/build/reports:/e2e/reports --name e2etester e2etests
 ```
 e2e tests are implemented in the following way:
 - [`e2eTests/Dockerfile`][e2eTestsDockerfile] defines a Docker image with
@@ -48,14 +48,15 @@ e2e tests are implemented in the following way:
   - deploys product and review microservices with Docker-compose as described 
 in section [Deploy all services](#deploy-all-services)
   - Runs `./gradlew e2eTest`
+  - Copies tests report into `/e2e/reports` mount point for volume bind-mounted from your(host) filesystem. 
+    This way the report is available on your filesystem at `e2eTests/build/reports`, as if you execute tests directly outside Docker container.
   - tears down the microservices with Docker-compose as described
     in section [Deploy all services](#deploy-all-services)
 - `e2eTest` Gradle task is a `Test` task running test classes in [`e2eTests/src/main/groovy`][e2eTestsClasses]
 - One test class is defined in `e2eTests/src/main/groovy`: `MicroServicesSpec`. It is a Spock `Specification` with 
-features calling review and product services endpoints through Spring web `TestRestTemplate`.
+features calling review and product services endpoints through Spring Boot test `TestRestTemplate`.
   
-Such e2e tests are fully isolated from your system because they run in a Docker container and microservices are built after cleaning build output directory
-(tests report are available in host filesystem at `e2eTests/reports` because of volume bind-mounting).
+Such e2e tests are fully isolated(except for report) from your system because they run in a Docker container and microservices are built after cleaning build output directory.
 This makes the tests a good fit for validation in continuous deployment but has the drawback of slow local iterations.
 For faster local e2e testing [`e2eTests/e2e-tests-local.sh`][e2eTestsLocalScript] is available. It runs the microservices with `:<SERVICE>service:bootRun` Gradle task
 (see next section [Run a service](#run-a-service))directly on your system, without previous cleaning(`:<SERVICE>service:clean` is not run).
@@ -89,10 +90,10 @@ docker image build --build-arg service=<SERVICE> -t <SERVICE>service .
 
 ### Run a service
 #### Gradle
-You can run a previously built `jar`(`<VERSION>` is the value of `version` property in [`<SERVICE>service/build.gradle`][serviceBuildGradle]):
+You can run a previously built `jar`(see [Gradle multi-project build system](#gradle-multi-project-build-system) section for the value to use for `<VERSION>`):
 
 ```sh
-java -jar <SERVICE>service-<VERSION>.jar
+java -jar <SERVICE>service/build/libs/<SERVICE>service-<VERSION>.jar
 ```
 
 or build and run a service in one shot:
@@ -137,7 +138,7 @@ cookiecutter servicegen/
 ```
 
 cookiecutter will prompt you for [some informations][cookiecutter-data] about the new service. You can directly press enter at any prompt to accept the defaults.
-The newly generated service is a minimal Spring Boot Web application listening on port `8080` and exposing a `/hello` `GET` ReST endpoint with a unit test for it.
+The newly generated service is a minimal Spring Boot Web application listening on port `8080` by default and exposing a `/hello` `GET` ReST endpoint with a unit test for it.
 The Swagger(*Open API*) HTML documentation of the service is exposed at `/`.
 You can use the same Gradle and Docker [operations described above](#test-a-service) to test, build and run the service.
 
@@ -162,19 +163,16 @@ The database coordinates are defined in Spring Boot [application properties][app
 The microservices defined in this repository are built through a single Gradle multi-project build system. 
 
 The **goal I wanted to achieve** with such build system **was to not have to repeat for every microservice the dependencies and build tasks configurations that are common** 
-to all microservices(for example `org.springdoc:springdoc-openapi-groovy` for Swagger(*OpenAPI*) documentation generation or `useJUnitPlatform()` test task configuration for test classes discovery).
+to all microservices(for example `org.springdoc:springdoc-openapi-groovy` for Swagger(*OpenAPI*) documentation generation or `useJUnitPlatform()` test task configuration for test classes discovery or microservice version setting task).
 
 Here is how it is implemented:
-- [`settings.gradle`][settingsGradle] at repository root includes every subdirectory with a name ending with `service` as a buildable project
+- [`settings.gradle`][settingsGradle] at repository root includes every subdirectory with a name ending with `service` as a buildable project(*service buildable discovery*)
 - Each `*service` Gradle project is defined in [`*service/build.gradle`][serviceBuildGradle] and applies the [`spring-boot-service`][gradlePlugin] 
-'in-line' Gradle plugin which defines common dependencies and tasks configuration and in turns applies the `org.springframework.boot` Gradle plugin.
+'in-line' Gradle plugin which defines common dependencies and tasks configurations and applies common Gradle plugins, including the `org.springframework.boot` one
 - This way every `*service` Gradle project has the `bootJar` task defined to build a self-contained Spring Boot `jar` including an embedded servlet container for web exposure.
-
-**This build system allows also to build a Docker image for each microservice using one `Dockerfile`**.
-
-The [`Dockerfile`][Dockerfile] just needs to expose a build `ARG` to know which is the name of the microservice to build and delegate the build to `:<NAME>service:bootJar` Gradle task.
-A second build stage defined in the `Dockerfile` copies the `jar` into a new image layer to not include source code in the final image built and set the entrypoint to run a container to `java -jar *.jar`.
-This way the Docker image build is agnostic of the version of the microservice(the `jar`) to be included, which is instead defined only by the microservice `build.gradle`
+Also the `bootRun` task is included to run the service `@SpringBootApplication` main class directly without creating a `jar`
+- Version of a microservice is defined in `microservice.version` property in its [application properties][applicationProperties] and fetched by `parseVersion` task implemented and executed
+by `spring-boot-service` 'in-iine' Gradle Plugin
 > **Note**
 > The term 'in-line' Gradle plugin is a term of mine. 
 > 
@@ -188,22 +186,29 @@ This way the Docker image build is agnostic of the version of the microservice(t
 > This is why I like to think about it as an 'in-line' or 'embedded' Gradle plugin. 
 > It is the perfect fit to dry in a self-contained manner common build configuration across microservices defined in the same repository.
 
+**This build system allows also to build a Docker image for each microservice using one `Dockerfile`**.
+
+The [`Dockerfile`][Dockerfile] just needs to expose a build `ARG` to know which is the name of the microservice to build and delegate the build to `:<NAME>service:bootJar` Gradle task after a cleanup(`:<NAME>service:clean`).
+A second build stage defined in the `Dockerfile` copies the generated `jar` into a new image layer to not include source code in the final image built and set the entrypoint to run a container to `java -jar *.jar`.
+This way the Docker image build is agnostic of the version of the microservice(the `jar`) to be included, which is instead defined only by the microservice [application properties][applicationProperties].
+
 
 ## Further notes
 The product service aggregation `GET` endpoint consumes a live ReST API which is not the suggested `https://www.adidas.co.uk/api/products/{productId}`.
-This because it answers `403` http status code to `org.springframework.web.client.RestTemplate` instance used to consume it.
+This because it answers `403` http status code to Spring web `RestTemplate` instance used to consume it.
 I tried it out with `curl https://www.adidas.co.uk/api/products/M20324 -i` and I received back `301` or `403` http status codes as well.
 With the browser instead the API retrieves the expected product data in `application/json` MIME type.
 The request from the browser includes a `cookie` header so Adidas live API requires session management with cookies.
 I tried to implement session management with cookies within product service by writing an implementation of `org.springframework.http.client.ClientHttpRequestInterceptor`
-that records first response headers and add them to next requests but it didn't work, `403` was still returned. The session management implementation attempt is in branch `feature/product/aggregate-adidas-live-api`.
+that records first response headers and add them to next requests but it didn't work, `403` was still returned. 
+The session management implementation attempt is in branch [`feature/product/aggregate-adidas-live-api`][sessionManagementBranch].
 
 The live ReST API consumed by product service in `master` is instead `https://tienda.mercadona.es/api/categories/{id}` which does not require session management. 
 It uses numeric IDs instead of alphanumeric ones. The response `Content-Type` is `application/json`, it is localised in Spanish and describes a category of products
 like `Agua y refrescos` along with the related products. For the purposes of demoing the product service aggregation endpoint only the `name` top field of this Mercadona API is aggregated.
 Examples of products categories IDs are `12`, `13`, `15`, `18`.
 
-Thus by sending a `GET` request to `/product/13` the following response body is retrieved:
+Thus by sending a `GET` request to `/product/18` the following response body is retrieved:
 ````json
 {
   "id": 18,
@@ -229,3 +234,4 @@ Thus by sending a `GET` request to `/product/13` the following response body is 
 [serviceBuildGradle]:  https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/build.gradle
 [gradlePlugin]:  https://github.com/rikZerac/product-store-micro/blob/master/buildSrc/src/main/groovy/spring-boot-service.gradle
 [Dockerfile]: https://github.com/rikZerac/product-store-micro/blob/master/Dockerfile
+[sessionManagementBranch]: https://github.com/rikZerac/product-store-micro/tree/feature/product/aggregate-adidas-live-api
