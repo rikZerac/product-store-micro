@@ -23,8 +23,7 @@ class HttpSecurityConfiguration {
                     anyRequest().authenticated()
                 }
             }
-            // 'username' and 'password' credentials fields names, /login path for login page
-            formLogin(Customizer.withDefaults())
+            httpBasic(Customizer.withDefaults())
             // Development/Demo setup:
             // h2 web console can be rendered in an HTML document frame
             headers().frameOptions().disable()

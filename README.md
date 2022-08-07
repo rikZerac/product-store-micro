@@ -36,7 +36,7 @@ Unit tests are behaviour tests implemented as Spock `Specification`s
 docker image build -t e2etests -f e2eTests/Dockerfile .
 
 # Run Docker container from built image to execute e2e tests
-docker run --rm -t --name e2etester --privileged e2etests
+docker run --rm -t --privileged -v $(pwd)/e2eTests/reports:/e2e/reports --name e2etester e2etests
 ```
 e2e tests are implemented in the following way:
 - [`e2eTests/Dockerfile`][e2eTestsDockerfile] defines a Docker image with
@@ -48,22 +48,32 @@ e2e tests are implemented in the following way:
   - deploys product and review microservices with Docker-compose as described 
 in section [Deploy all services](#deploy-all-services)
   - Runs `./gradlew e2eTest`
-  - tears down the microservices with Docker-compose as as described
+  - tears down the microservices with Docker-compose as described
     in section [Deploy all services](#deploy-all-services)
 - `e2eTest` Gradle task is a `Test` task running test classes in [`e2eTests/src/main/groovy`][e2eTestsClasses]
-- One test class is defined in `e2eTests/src/main/groovy`: `MicroServicesSpec`. It is a Spock `Specification` with a 
-feature calling product service aggregation endpoint through Spring web `RestTemplate`
+- One test class is defined in `e2eTests/src/main/groovy`: `MicroServicesSpec`. It is a Spock `Specification` with 
+features calling review and product services endpoints through Spring web `TestRestTemplate`.
+  
+Such e2e tests are fully isolated from your system because they run in a Docker container and microservices are built after cleaning build output directory
+(tests report are available in host filesystem at `e2eTests/reports` because of volume bind-mounting).
+This makes the tests a good fit for validation in continuous deployment but has the drawback of slow local iterations.
+For faster local e2e testing [`e2eTests/e2e-tests-local.sh`][e2eTestsLocalScript] is available. It runs the microservices with `:<SERVICE>service:bootRun` Gradle task
+(see next section [Run a service](#run-a-service))directly on your system, without previous cleaning(`:<SERVICE>service:clean` is not run).
+> **Note**
+> `e2eTests/e2e-tests-local.sh` has been tested on MacOS only. Porting to Linux should be trivial(*just adapt [this line][chromeCall] to open tests HTML report in a browser*).
+> Porting to Windows can be shorcut by using a library providing POSIX API(like `cygwin`) otherwise translation to MS-DOS syntax should be pretty straight forward.
 
 #### Swagger(*OpenAPI*)
 Swagger HTML documentation of `<SERVICE>` is exposed at `/`. You can browse it to manually try out the service ReST endpoints.
 In the case of `review` service, it exposes write endpoints(`POST`, `DELETE`) protected by authentication through Spring [`HttpSecurity`][HttpSecurity].
-Thus you need to first login at `/login` with username `lee` and password `rock`(*This credentials are an intentional reference to a pretty famous manga...*)
-in order to try them.
+Thus Swagger page will prompt you for username and password. Username is `lee` and password is `rock`(*These credentials are an intentional reference to a pretty famous manga...*).
 > **Note**
-> Of course putting username and password to access data writing endpoints in a README.md of a public Git repository is an awful security practice.
+> Of course putting username and password to access data writing endpoints in a public Git repository is an awful security practice.
 > This is done since these are **purely demo purposes endpoints**, accessing an in-memory database with sample data. 
 > However, to demo good security practices, the default password generated dynamically and logged at start up by Spring Boot security is replaced by a static encrypted one,
 > as suggested in `withDefaultPasswordEncoder()` method deprecation note of class `org.springframework.security.core.userdetails.User`.
+> e2e tests also use the above credentials to consume write endpoints. In a non-demo scenario dedicated e2e tests credentials and underlying test data storage should be
+> used
 
 
 ### Build a service
@@ -205,7 +215,9 @@ Thus by sending a `GET` request to `/product/13` the following response body is 
 
 [e2eTestsDockerfile]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/Dockerfile
 [e2eTestsScript]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/e2e-tests.sh
+[e2eTestsLocalScript]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/e2e-tests-local.sh
 [e2eTestsClasses]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests//src/main/groovy/dev/riccardo/productsstore/MicroServicesSpec.groovy
+[chromeCall]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests//src/main/groovy/dev/riccardo/productsstore/MicroServicesSpec.groovy#L18
 [HttpSecurity]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L23
 [passwordEncrypt]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy//dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L40
 [applicationProperties]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/resources/application.yaml

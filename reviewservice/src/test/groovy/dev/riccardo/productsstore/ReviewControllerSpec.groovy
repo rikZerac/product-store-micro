@@ -8,7 +8,6 @@ import spock.lang.Specification
 
 @SpringBootTest
 class ReviewControllerSpec extends Specification {
-    private static final long REVIEW_PRODUCT_ID = 13
     private static final long NO_REVIEW_PRODUCT_ID = 1000
     Review REVIEW = new Review(productId: 1, averageReviewScore: 7.4, numberOfReviews: 2000)
 
@@ -20,6 +19,17 @@ class ReviewControllerSpec extends Specification {
     void "Application has ReviewController"() {
         expect:
         this.reviewController
+    }
+
+    void "ReviewController reads review"() {
+        given: "An existing review productId"
+        Long productId = 13
+
+        when: "ReviewController is asked to read an existing review"
+        Review readReview = this.reviewController.findByProductId(productId)
+
+        then: "ReviewController finds the review"
+        productId == readReview.productId
     }
 
     void "ReviewController saves new review"() {
@@ -36,22 +46,28 @@ class ReviewControllerSpec extends Specification {
         given: "A new average review score"
         Float newAverageReviewScore = 10.0
 
+        and: "An existing review product id"
+        Long productId = 13
+
         when: "ReviewController is asked to save a review with existing product id and new average review score"
-        Review readReview = this.reviewController.findByProductId(REVIEW_PRODUCT_ID)
+        Review readReview = this.reviewController.findByProductId(productId)
         Review newReview = readReview.clone() as Review
         newReview.averageReviewScore = newAverageReviewScore
         this.reviewController.save(newReview)
 
         then: "The review has the new average review score"
-        newAverageReviewScore == this.reviewController.findByProductId(REVIEW_PRODUCT_ID).averageReviewScore
+        newAverageReviewScore == this.reviewController.findByProductId(productId).averageReviewScore
     }
 
     void "ReviewController deletes review"() {
+        given: "An existing review product id"
+        Long productId = 13
+
         when: "ReviewController is asked to delete review"
-        this.reviewController.deleteByProductId(REVIEW_PRODUCT_ID)
+        this.reviewController.deleteByProductId(productId)
 
         and: "The review is read"
-        this.reviewController.findByProductId(REVIEW_PRODUCT_ID)
+        this.reviewController.findByProductId(productId)
 
         then: "The review is not found"
         ResponseStatusException responseStatusException = thrown()
@@ -59,8 +75,11 @@ class ReviewControllerSpec extends Specification {
     }
 
     void "ReviewController responds 404 when asked to find unexisting review"(){
+        given: "A nenexisting review product id"
+        Long productId = 100
+
         when: "ReviewController is asked to find unexisting review"
-        this.reviewController.findByProductId(NO_REVIEW_PRODUCT_ID)
+        this.reviewController.findByProductId(productId)
 
         then: "ReviewController responds 404"
         ResponseStatusException responseStatusException = thrown()
@@ -86,8 +105,11 @@ class ReviewControllerSpec extends Specification {
     }
 
     void "ReviewController responds 404 when asked to delete unexisting review"(){
+        given: "A nenexisting review product id"
+        Long productId = 100
+
         when: "ReviewController is asked to delete unexisting review"
-        this.reviewController.deleteByProductId(NO_REVIEW_PRODUCT_ID)
+        this.reviewController.deleteByProductId(productId)
 
         then: "ReviewController responds 404"
         ResponseStatusException responseStatusException = thrown()
