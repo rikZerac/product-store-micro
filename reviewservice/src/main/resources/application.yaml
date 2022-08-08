@@ -29,5 +29,5 @@ spring:
             enabled: true
             settings:
                 # Allow connection to h2 web console from external hosts.
-                # Required to browse the web console on Docker daemon host when the servoce is runnning as a Docker container
+                # Required to browse the web console on Docker daemon host when the service is runnning as a Docker container
                 web-allow-others: true

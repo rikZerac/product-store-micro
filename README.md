@@ -52,8 +52,8 @@ in section [Deploy all services](#deploy-all-services)
     This way the report is available on your filesystem at `e2eTests/build/reports`, as if you execute tests directly outside Docker container.
   - tears down the microservices with Docker-compose as described
     in section [Deploy all services](#deploy-all-services)
-- `e2eTest` Gradle task is a `Test` task running test classes in [`e2eTests/src/main/groovy`][e2eTestsClasses]
-- One test class is defined in `e2eTests/src/main/groovy`: `MicroServicesSpec`. It is a Spock `Specification` with 
+- `e2eTest` Gradle task is a `Test` task running test classes in `e2eTests/src/main/groovy`
+- One test class is defined in `e2eTests/src/main/groovy`: [`MicroServicesSpec`][microserviceSpec]. It is a Spock `Specification` with 
 features calling review and product services endpoints through Spring Boot test `TestRestTemplate`.
   
 Such e2e tests are fully isolated(except for report) from your system because they run in a Docker container and microservices are built after cleaning build output directory.
@@ -69,12 +69,17 @@ Swagger HTML documentation of `<SERVICE>` is exposed at `/`. You can browse it t
 In the case of `review` service, it exposes write endpoints(`POST`, `DELETE`) protected by authentication through Spring [`HttpSecurity`][HttpSecurity].
 Thus Swagger page will prompt you for username and password. Username is `lee` and password is `rock`(*These credentials are an intentional reference to a pretty famous manga...*).
 > **Note**
+> The implementation of *OpenAPI* used(`org.springdoc:springdoc-openapi-ui:1.6.9`) will establish a session upon username/password authentication.
+> The session is managed through a cookie so if you restart review service you may not be prompted for credentials when trying a write endpoint through *OpenAPI*
+> page. To force authentication to be requested again you have to clear your browser cookies.
+
+> **Note**
 > Of course putting username and password to access data writing endpoints in a public Git repository is an awful security practice.
 > This is done since these are **purely demo purposes endpoints**, accessing an in-memory database with sample data. 
 > However, to demo good security practices, the default password generated dynamically and logged at start up by Spring Boot security is replaced by a static encrypted one,
 > as suggested in `withDefaultPasswordEncoder()` method deprecation note of class `org.springframework.security.core.userdetails.User`.
 > e2e tests also use the above credentials to consume write endpoints. In a non-demo scenario dedicated e2e tests credentials and underlying test data storage should be
-> used
+> used.
 
 
 ### Build a service
@@ -221,8 +226,8 @@ Thus by sending a `GET` request to `/product/18` the following response body is 
 [e2eTestsDockerfile]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/Dockerfile
 [e2eTestsScript]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/e2e-tests.sh
 [e2eTestsLocalScript]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/e2e-tests-local.sh
-[e2eTestsClasses]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests//src/main/groovy/dev/riccardo/productsstore/MicroServicesSpec.groovy
-[chromeCall]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests//src/main/groovy/dev/riccardo/productsstore/MicroServicesSpec.groovy#L18
+[microserviceSpec]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests//src/main/groovy/dev/riccardo/productsstore/MicroServicesSpec.groovy
+[chromeCall]: https://github.com/rikZerac/product-store-micro/blob/master/e2eTests/e2e-tests-local.sh#L18
 [HttpSecurity]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy/dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L23
 [passwordEncrypt]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/groovy//dev/riccardo/productsstore/HttpSecurityConfiguration.groovy#L40
 [applicationProperties]: https://github.com/rikZerac/product-store-micro/blob/master/reviewservice/src/main/resources/application.yaml
